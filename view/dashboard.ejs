@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href='/css/bootstrap.min.css'>
+    <link rel="stylesheet" href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.0.1/css/bootstrap.min.css'>
+    <link rel="stylesheet" href='https://cdn.datatables.net/1.10.25/css/dataTables.bootstrap5.min.css'>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <title>Dashboard</title>
+</head>
+
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Custom Portal</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
+                aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0"></ul>
+                <span class="navbar-text mx-3 custom_portal_user">
+                    Welcome <span class="text-info">
+                        <%= data.username %>
+                    </span> this is your custom portal.
+                </span>
+                <span class="d-flex">
+                    <a href="/logout"><button type="button" class="btn btn-primary rounded-pill">Logout</button></a>
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-5">
+        <div class="row">
+            <h1>Records
+                <button style="float:right" id="add_record" class="btn btn-success rounded-pill">Add New Record
+                    &raquo</button>
+                    <a href="/records/export"><button style="float:right" class="btn btn-primary rounded-pill">Export</button></a>
+            </h1>
+
+            <div class="table-responsive">
+                <table id="recordList" class="table table-striped">
+                    <thead class="table-success">
+                        <tr>
+                            <th scope="col">Sno</th>
+                            <th scope="col">Plant Name</th>
+                            <th scope="col">Address</th>
+                            <th scope="col">City</th>
+                            <th scope="col">State</th>
+                            <th scope="col" style="width:20%">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="records_body">
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+    <!-- Update record Modal -->
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <form method="PUT" class="update_form">
+                <h1>Record </h1>
+                <div class="container">
+
+                    <label for="plant_name"><b>Plant Name</b></label>
+                    <input type="text" placeholder="Enter plant name" name="plant_name" id="plant_name" required>
+
+                    <label for="address"><b>Address</b></label>
+                    <input type="text" placeholder="Enter address" name="address" id="address" required>
+
+                    <label for="city"><b>City</b></label>
+                    <input type="text" placeholder="Enter city" name="city" id="city" required>
+
+                    <label for="state"><b>State</b></label>
+                    <input type="text" placeholder="Enter state" name="state" id="state" required>
+
+
+                    <br>
+                    <br>
+                    <button type="submit" class="update_record_btn btn btn-outline-primary">Update Record</button>
+                    <button type="submit" style="display: none;" class="add_record_btn btn btn-outline-primary">Add
+                        Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+
+
+    <script src="/js/dashboard.js"></script>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+    <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.25/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
+
+    <script>
+
+
+
+        var records_body = document.getElementById("records_body");
+        var update_record_btn = document.getElementsByClassName("update_record_btn")[0];
+        var add_record = document.getElementById("add_record");
+        var add_record_btn = document.getElementsByClassName("add_record_btn")[0];
+        var recordsArray, sno = 0;
+
+        window.onload = () => {
+            var request = new XMLHttpRequest();
+
+            request.addEventListener("load", (res) => {
+                recordsArray = JSON.parse(res.target.responseText)
+                if (recordsArray.length) {
+                    recordsArray.forEach(record => {
+                        addRecordToDOM(record);
+                    });
+                }
+                else {
+                    noRecordFoundToDOM()
+                }
+                $('#recordList').DataTable();
+            });
+            let token = "<%= token %>"
+            request.open('GET', '/records/');
+            request.setRequestHeader('Authorization', 'Bearer ' + token);
+            request.send();
+        };
+
+        function addRecordToDOM(record) {
+            sno++;
+            let parent_tr = document.createElement("tr");
+            parent_tr.setAttribute("id", record.id);
+
+
+            let sno_th = document.createElement("th");
+            sno_th.setAttribute("scope", "row");
+            sno_th.innerHTML = sno;
+            parent_tr.appendChild(sno_th);
+
+
+            let name_td = document.createElement("td");
+            name_td.innerHTML = record.name;
+            parent_tr.appendChild(name_td);
+
+            let address_td = document.createElement("td");
+            address_td.innerHTML = record.address;
+            parent_tr.appendChild(address_td);
+
+            let city_td = document.createElement("td");
+            city_td.innerHTML = record.city;
+            parent_tr.appendChild(city_td);
+
+            let state_td = document.createElement("td");
+            state_td.innerHTML = record.state;
+            parent_tr.appendChild(state_td);
+
+            let delete_update_td = document.createElement("td");
+            let delete_a = document.createElement("a");
+            delete_a.setAttribute("class", "btn btn-outline-danger btn-sm");
+            delete_a.onclick = deleterecord(record.id);
+            delete_a.innerHTML = "Delete";
+            delete_update_td.appendChild(delete_a);
+
+            let update_a = document.createElement("a");
+            update_a.setAttribute("class", "btn btn-outline-primary btn-sm");
+            update_a.innerHTML = "Update";
+            delete_update_td.appendChild(update_a);
+
+            parent_tr.appendChild(delete_update_td);
+
+            records_body.appendChild(parent_tr);
+
+
+
+
+
+            update_a.addEventListener('click', (e) => {
+                modal.style.display = "block";
+                update_record_btn.style.display = "block";
+                add_record_btn.style.display = "none";
+                childs = e.target.parentNode.parentNode.children
+                plant_name_modal.value = childs[1].innerHTML;
+                address_modal.value = childs[2].innerHTML;
+                city_modal.value = childs[3].innerHTML;
+                state_modal.value = childs[4].innerHTML;
+                update_record_btn.addEventListener("click", () => {
+                    updated_record_data = {
+                        name: plant_name_modal.value,
+                        address: address_modal.value,
+                        city: city_modal.value,
+                        state: state_modal.value
+                    }
+                    updaterecord(record.id, JSON.stringify(updated_record_data));
+                })
+            })
+
+        }
+
+
+
+        function noRecordFoundToDOM() {
+            let parent_tr = document.createElement("tr");
+
+            let no_records_td = document.createElement("td");
+            no_records_td.setAttribute("colspan", "6");
+            no_records_td.setAttribute("class", "text-center");
+            no_records_td.innerHTML = "No Record Found";
+            parent_tr.appendChild(no_records_td);
+
+            records_body.appendChild(parent_tr);
+
+        }
+
+        function deleterecord(id) {
+            return () => {
+                var request = new XMLHttpRequest();
+
+                request.addEventListener("load", (res) => {
+                    recordsArray = JSON.parse(res.target.responseText)
+                    alert(recordsArray.message)
+                    location.reload();
+                });
+                let token = "<%= token %>"
+                request.open('DELETE', '/records/' + id);
+                request.setRequestHeader('Authorization', 'Bearer ' + token);
+                request.send();
+            }
+        }
+
+
+        function updaterecord(id, data) {
+
+            var request = new XMLHttpRequest();
+            let token = "<%= token %>"
+
+            request.open('PUT', '/records/' + id);
+            request.setRequestHeader('Content-Type', 'application/json');
+            request.setRequestHeader('Authorization', 'Bearer ' + token);
+            request.send(data);
+
+        }
+        // Modal area
+        var modal = document.getElementById("myModal");
+        var span = document.getElementsByClassName("close")[0];
+
+        var plant_name_modal = document.getElementById("plant_name");
+        var address_modal = document.getElementById("address");
+        var city_modal = document.getElementById("city");
+        var state_modal = document.getElementById("state");
+        span.onclick = function () {
+            modal.style.display = "none";
+        }
+        window.onclick = function (event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        // add product modal handled
+        add_record.addEventListener('click', (e) => {
+            modal.style.display = "block";
+            update_record_btn.style.display = "none";
+            add_record_btn.style.display = "block";
+            add_record_btn.addEventListener("click", () => {
+                data = {
+                    name: plant_name_modal.value,
+                    address: address_modal.value,
+                    city: city_modal.value,
+                    state: state_modal.value
+                }
+                var request = new XMLHttpRequest();
+
+                let token = "<%= token %>"
+
+                request.open('POST', '/records/create-record');
+                request.setRequestHeader('Content-Type', 'application/json');
+                request.setRequestHeader('Authorization', 'Bearer ' + token);
+                request.send(JSON.stringify(data));
+            })
+        })
+
+
+    </script>
+</body>
+
+</html>
